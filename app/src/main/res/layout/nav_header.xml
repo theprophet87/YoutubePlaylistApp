@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:id="@+id/name"
+        android:text="@string/company_name"
+        android:textColor="@color/black"
+        android:layout_marginTop="10dp"
+        android:textStyle="bold"
+        android:textSize="16sp"
+        android:layout_marginStart="16dp"/>
+
+    <ImageView
+        android:id="@+id/small_logo"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentEnd="true"
+        android:layout_alignParentTop="true"
+        android:layout_alignBottom="@id/line"
+        android:layout_toRightOf="@id/name"
+        android:layout_marginStart="20dp"
+        android:src="@drawable/prophetic_solutions_small" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:id="@+id/username"
+        android:text="@theprophet87"
+        android:layout_below="@+id/name"
+        android:textColor="@color/light_grey"
+        android:textSize="12sp"
+        android:layout_marginStart="16dp"/>
+
+    <View
+        style="@style/line"
+        android:id="@+id/line"
+        android:layout_width="match_parent"
+        android:layout_below="@id/username"/>
+
+</RelativeLayout>
