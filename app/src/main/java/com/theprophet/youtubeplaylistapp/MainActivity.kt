@@ -42,6 +42,8 @@ import kotlinx.coroutines.launch
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding?.root)
 
+        
+
 
         //find views from home activity xml
         val toolbar = findViewById<MaterialToolbar>(R.id.topAppbar)

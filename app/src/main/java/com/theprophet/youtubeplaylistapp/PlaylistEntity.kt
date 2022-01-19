@@ -7,7 +7,9 @@ import androidx.room.PrimaryKey
 @Entity(tableName = "playlist-table")
 data class PlaylistEntity(
     @PrimaryKey(autoGenerate = true)
-    val id: Int = 0,
-    @ColumnInfo(name = "link-id")
-    val link: String = ""
+    var id: Int = 0,
+    var link: String ="",
+    var title: String = "",
+    //@ColumnInfo(name = "author-id")
+    var author: String = ""
 )

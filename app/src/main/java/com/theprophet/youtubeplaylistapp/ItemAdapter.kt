@@ -16,6 +16,7 @@ class ItemAdapter(private val items: ArrayList<PlaylistEntity>,
 
         val llMain = binding.llMain
         val tvName = binding.tvName
+        val tvAuthor = binding.tvAuthor
         val ivEdit = binding.ivEdit
         val ivDelete = binding.ivDelete
     }
@@ -28,7 +29,8 @@ class ItemAdapter(private val items: ArrayList<PlaylistEntity>,
         val context = holder.itemView.context
         val item = items[position]
 
-        holder.tvName.text = item.link
+        holder.tvName.text = item.title
+        holder.tvAuthor.text = item.author
 
 
         //when position is every second object, change its background color
