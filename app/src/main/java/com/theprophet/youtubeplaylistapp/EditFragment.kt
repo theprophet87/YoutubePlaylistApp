@@ -21,17 +21,14 @@ import okhttp3.*
 import org.json.JSONObject
 import java.io.IOException
 
-//TODO: We are now able to add items to database!!
-//TODO: We can start adding items to adapter class to show in RecyclerView
+//TODO: Find out how to update database
 
 class EditFragment : Fragment() {
     private var _binding: FragmentEditBinding? = null
     private val binding get() = _binding
     private var ytLink: String? = null
     private var jsonContact: JSONObject? = null
-    private var jsonObj:JSONObject? = null
 
-    //TODO: set up adapter to show entries
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -75,8 +72,9 @@ class EditFragment : Fragment() {
                     jsonContact = JSONObject(str_response)
 
                     //local variables
-                    var title = jsonContact?.getString("title")
-                    var author = jsonContact?.getString("author_name")
+                    val title = jsonContact?.getString("title")
+                    val author = jsonContact?.getString("author_name")
+
 
                     addRecord(plDao, title!!, author!!, ytLink!!)
 
@@ -89,19 +87,22 @@ class EditFragment : Fragment() {
             })
 
 
-        }
+            lifecycleScope.launch {
+                plDao.fetchAllLinks().collect {
+                    val list = ArrayList(it)
 
-
-        /*
-        lifecycleScope.launch {
-            plDao.fetchAllLinks().collect {
-                val list = ArrayList(it)
-
-                setupListOfDataIntoRecyclerView(list, plDao)
+                    setupListOfDataIntoRecyclerView(list, plDao)
+                }
             }
+
+
         }
 
-        */
+
+
+
+
+
 
 
         return view
@@ -210,13 +211,13 @@ class EditFragment : Fragment() {
            // val newJson = fetchJson(link)
 
             //update title and author
-            //val title = newJson!!.getString("title")
-            //val author = newJson.getString("author")
+           val title = jsonContact?.getString("title")
+            val author = jsonContact?.getString("author")
 
             if(link.isNotEmpty()){
                 lifecycleScope.launch {
-                   // playlistDao.update(PlaylistEntity(id, link = link, title = title, author = author ))
-                   // Toast.makeText(context, "Record Updated",Toast.LENGTH_LONG).show()
+                  playlistDao.update(PlaylistEntity(id, link = link, title = title!!, author = author!! ))
+                   Toast.makeText(context, "Record Updated",Toast.LENGTH_LONG).show()
                     updateDialog.dismiss()
                 }
 

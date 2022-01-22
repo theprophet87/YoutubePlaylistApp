@@ -34,6 +34,7 @@ class ItemAdapter(private val items: ArrayList<PlaylistEntity>,
 
 
         //when position is every second object, change its background color
+        /*
         if (position % 2 == 0){
             holder.llMain.setBackgroundColor(
                 ContextCompat.getColor(holder.itemView.context,
@@ -44,8 +45,8 @@ class ItemAdapter(private val items: ArrayList<PlaylistEntity>,
                 ContextCompat.getColor(holder.itemView.context,
                 R.color.white))
 
-        }
-
+            }
+        */
         holder.ivEdit.setOnClickListener {
             updateListener.invoke(item.id)
         }
