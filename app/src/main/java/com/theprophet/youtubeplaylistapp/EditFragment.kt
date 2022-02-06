@@ -4,6 +4,7 @@ import android.app.AlertDialog
 import android.app.Dialog
 import android.content.Context
 import android.os.Bundle
+import android.provider.Settings.Global.getString
 import android.util.Log
 import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
@@ -26,8 +27,10 @@ import androidx.lifecycle.Observer
 import com.beust.klaxon.KlaxonException
 import okhttp3.*
 import okio.IOException
+import org.json.JSONException
 import org.json.JSONObject
 import java.net.URL
+import java.nio.file.Paths.get
 
 //TODO: Add valid youtube link data to database
 
@@ -35,13 +38,13 @@ class EditFragment : Fragment() {
     private var _binding: FragmentEditBinding? = null
     private val binding get() = _binding
     private var ytLink: String? = null
+    private var mTitle: String? = null
+    private var mAuthorName: String? = null
 
 
     // Create OkHttp Client
     private val client = OkHttpClient()
 
-    //create viewModel
-    val viewModel: MainActivityViewModel by viewModels()
 
 
     override fun onCreateView(
@@ -57,144 +60,107 @@ class EditFragment : Fragment() {
         val plDao = db.playlistDao()
 
 
+
+
         //logic for when Add button is clicked
         binding?.btnAdd?.setOnClickListener {
 
             /* load user input (youtube link) into variable as String */
-
-           ytLink = binding?.etLink?.text.toString()
+            ytLink = binding?.etLink?.text.toString()
 
             /* fetch JSON object */
 
             //concat the original url with format for youtube JSON object
             val finalUrl = "https://www.youtube.com/oembed?url=$ytLink&format=json"
 
-            fetch(finalUrl)
-
             /* use 'fetch' method to get response from YT site and parse JSON object
-            using Klaxon with string from response
-             */
 
-            //local variables
-           // val title = jsonContact.getString("title")
-           // val author = jsonContact.getString("author_name")
-
-          //  addRecord(plDao, title!!, author!!, ytLink!!)
+            */
+            getRequest(finalUrl)
 
 
+/*
+        addRecord(
+            plDao,
+            mTitle!!,
+            mAuthorName!!,
+            ytLink!!
+        )
+*/
+            /*
             lifecycleScope.launch {
 
-
-                /*
-                plDao.fetchAllLinks().collect {
                     val list = ArrayList(it)
 
                     setupListOfDataIntoRecyclerView(list, plDao)
                 }
-
-                 */
             }
 
+             */
 
         }
-
-
-
-
-
-
-
 
         return view
     }
 
-    private fun fetch(sUrl: String): VideoInfo?{
-        var vidInfo: VideoInfo? = null
-
-        //if the input field is blank, we should display an error message
-        if(binding?.etLink?.text!!.isNotEmpty()) {
-            lifecycleScope.launch(Dispatchers.IO) {
-                val result = getRequest(sUrl)
-
-                when {
-                    result != null -> {
 
 
+    private fun getRequest(sUrl: String){
 
-                           try {
-
-
-                               // Parse result string JSON to data class
-                               vidInfo = Klaxon().parse<VideoInfo>(result)
-
-
-
-
-                               withContext(Dispatchers.Main) {
-                                   // Update view model
-                                   viewModel.title.value = vidInfo?.title
-                                   viewModel.author_name.value = vidInfo?.author_name
-
-                                   Toast.makeText(
-                                       context,
-                                       "${viewModel.title.value}",
-                                       Toast.LENGTH_LONG
-                                   )
-                                       .show()
-
-
-                               }
-
-
-                           } catch (e: KlaxonException) {
-
-                               //if input is invalid
-                               lifecycleScope.launch {
-                                   Toast.makeText(context, "Please paste valid Youtube link.", Toast.LENGTH_LONG).show()
-
-                               }
-
-                           }
-
-
-                    }
-
-                    else -> {
-
-                        print("Error: Get request returned no response")
-                    }
-                }
-
-            }
-        }else{
-            //error message if input field is empty
-            Toast.makeText(context, "Please paste valid Youtube link.", Toast.LENGTH_LONG).show()
-        }
-        return vidInfo
-    }
-
-    private fun getRequest(sUrl: String): String?{
-        var result: String? = null
 
         try {
             // Create URL
             val url = URL(sUrl)
 
             // Build request
-            val request = Request.Builder().url(url).build()
+            val request = Request.Builder().
+            url(url).
+            build()
 
-            // Execute request
-            val response = client.newCall(request).execute()
-            response.body?.string().also { result = it }
+            client.newCall(request).enqueue(object: Callback{
+                override fun onResponse(call: Call, response: Response) {
+                    val str_response = response.body!!.string()
+
+                    //try create json obj; if error (like invalid link) then show error Toast msg
+
+                    try{
+                        val json_contact = JSONObject(str_response)
+
+                        mTitle = json_contact.getString("title")
+
+                        lifecycleScope.launch {
+                            Toast.makeText(context, "Title: $mTitle", Toast.LENGTH_LONG).show()
 
 
+                        }
+
+
+                    }
+                    catch(e: JSONException){
+
+                        lifecycleScope.launch {
+
+                            Toast.makeText(context, "Please paste valid Youtube link.", Toast.LENGTH_LONG).show()
+                        }
+
+                    }
+
+                }
+
+                override fun onFailure(call: Call, e: java.io.IOException) {
+                    Toast.makeText(context, "Error fetching request.", Toast.LENGTH_LONG).show()
+                }
+
+
+
+            })
 
         }catch (err: Error){
 
             print("Error when executing get request: "+err.localizedMessage)
         }
 
-        return result
+
     }
 
     private fun addRecord(playlistDao: PlaylistDao,
