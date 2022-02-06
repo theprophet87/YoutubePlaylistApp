@@ -25,6 +25,7 @@ import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.withContext
 import androidx.lifecycle.Observer
 import com.beust.klaxon.KlaxonException
+import com.beust.klaxon.json
 import okhttp3.*
 import okio.IOException
 import org.json.JSONException
@@ -32,7 +33,7 @@ import org.json.JSONObject
 import java.net.URL
 import java.nio.file.Paths.get
 
-//TODO: Add valid youtube link data to database
+//TODO: Clear ReclycerView when database is empty
 
 class EditFragment : Fragment() {
     private var _binding: FragmentEditBinding? = null
@@ -76,17 +77,8 @@ class EditFragment : Fragment() {
             /* use 'fetch' method to get response from YT site and parse JSON object
 
             */
-            getRequest(finalUrl)
+            getRequest(finalUrl,plDao)
 
-
-/*
-        addRecord(
-            plDao,
-            mTitle!!,
-            mAuthorName!!,
-            ytLink!!
-        )
-*/
             /*
             lifecycleScope.launch {
 
@@ -94,7 +86,7 @@ class EditFragment : Fragment() {
 
                     setupListOfDataIntoRecyclerView(list, plDao)
                 }
-            }
+
 
              */
 
@@ -105,12 +97,13 @@ class EditFragment : Fragment() {
 
 
 
-    private fun getRequest(sUrl: String){
+    private fun getRequest(sUrl: String, sPldao: PlaylistDao){
 
 
         try {
             // Create URL
             val url = URL(sUrl)
+
 
             // Build request
             val request = Request.Builder().
@@ -119,20 +112,17 @@ class EditFragment : Fragment() {
 
             client.newCall(request).enqueue(object: Callback{
                 override fun onResponse(call: Call, response: Response) {
-                    val str_response = response.body!!.string()
+                   val str_response = response.body!!.string()
+
 
                     //try create json obj; if error (like invalid link) then show error Toast msg
 
                     try{
-                        val json_contact = JSONObject(str_response)
-
+                     val json_contact = JSONObject(str_response)
                         mTitle = json_contact.getString("title")
+                        mAuthorName = json_contact.getString("author_name")
 
-                        lifecycleScope.launch {
-                            Toast.makeText(context, "Title: $mTitle", Toast.LENGTH_LONG).show()
-
-
-                        }
+                        addRecord(sPldao,mTitle!!,mAuthorName!!,sUrl)
 
 
                     }
@@ -174,6 +164,18 @@ class EditFragment : Fragment() {
 
                 //clear fields after adding record
                 binding?.etLink?.text?.clear()
+
+
+                lifecycleScope.launch {
+                playlistDao.fetchAllLinks().collect{
+                    val list = ArrayList(it)
+
+                    setupListOfDataIntoRecyclerView(list, playlistDao)
+
+
+                     }
+
+                }
 
             }
 
