@@ -4,47 +4,43 @@ import android.app.AlertDialog
 import android.app.Dialog
 import android.content.Context
 import android.os.Bundle
-import android.provider.Settings.Global.getString
+import android.provider.MediaStore
 import android.util.Log
 import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.Button
 import android.widget.Toast
-import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
-import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.beust.klaxon.Klaxon
 import com.theprophet.youtubeplaylistapp.databinding.FragmentEditBinding
 import com.theprophet.youtubeplaylistapp.databinding.DialogUpdateBinding
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.collect
-import kotlinx.coroutines.withContext
-import androidx.lifecycle.Observer
-import com.beust.klaxon.KlaxonException
-import com.beust.klaxon.json
 import okhttp3.*
-import okio.IOException
 import org.json.JSONException
 import org.json.JSONObject
+import java.io.IOException
 import java.net.URL
-import java.nio.file.Paths.get
+import java.util.concurrent.ArrayBlockingQueue
 
-//TODO: Clear ReclycerView when database is empty
+//TODO: 1. implement exception handling 2. Fix recycler view delete issues with visuals
 
-class EditFragment : Fragment() {
+class EditFragment : Fragment()  {
     private var _binding: FragmentEditBinding? = null
     private val binding get() = _binding
     private var ytLink: String? = null
     private var mTitle: String? = null
     private var mAuthorName: String? = null
-
-
-    // Create OkHttp Client
+    private var plDao: PlaylistDao? = null
     private val client = OkHttpClient()
+    private val blockingQueue: ArrayBlockingQueue<JSONObject> =
+        ArrayBlockingQueue(1)
+    private var jsonContact: JSONObject? = null
+
+
+
 
 
 
@@ -55,11 +51,9 @@ class EditFragment : Fragment() {
         // Inflate the layout for this fragment
         _binding = FragmentEditBinding.inflate(inflater, container, false)
         val view = binding?.root
-
         //create instance of database
         val db = PlaylistDatabase.getInstance(requireContext())
-        val plDao = db.playlistDao()
-
+        plDao = db.playlistDao()
 
 
 
@@ -69,89 +63,62 @@ class EditFragment : Fragment() {
             /* load user input (youtube link) into variable as String */
             ytLink = binding?.etLink?.text.toString()
 
-            /* fetch JSON object */
+            /* send request to get JSON object and store in
+            * blocking queue */
 
-            //concat the original url with format for youtube JSON object
-            val finalUrl = "https://www.youtube.com/oembed?url=$ytLink&format=json"
+            fetch(ytLink!!)
 
-            /* use 'fetch' method to get response from YT site and parse JSON object
+            /* assign element in blocking queue to variable to work with */
+            try {
+                jsonContact = blockingQueue.take()
 
-            */
-            getRequest(finalUrl,plDao)
+            }catch(e: InterruptedException){
+                e.printStackTrace()
+            }
 
-            /*
-            lifecycleScope.launch {
+            mTitle = jsonContact!!.getString("title")
+            mAuthorName = jsonContact!!.getString("author_name")
 
-                    val list = ArrayList(it)
+            Log.d("message","title: $mTitle")
 
-                    setupListOfDataIntoRecyclerView(list, plDao)
-                }
-
-
-             */
+           //add data into record
+            addRecord(plDao!!,mTitle!!,mAuthorName!!, ytLink!!)
 
         }
 
         return view
     }
 
+    //fetches json object from Youtube
+    private fun fetch(sUrl: String){
+        val client = OkHttpClient()
+        // Create URL
+        //concat the original url with format for youtube JSON object
+        val finalUrl = "https://www.youtube.com/oembed?url=$sUrl&format=json"
+        val url = URL(finalUrl)
+
+        // Build request
+        val request = Request.Builder().
+        url(url).
+        build()
+        client.newCall(request).enqueue(object: Callback{
+            override fun onFailure(call: Call, e: IOException) {
+                TODO("Not yet implemented")
+            }
+
+            override fun onResponse(call: Call, response: Response) {
+                val json_contact = response.body!!.string()
+                val responseJSON = JSONObject(json_contact)
+
+                //add json object to queue to be parsed later
+               blockingQueue.add(responseJSON)
+
+            }
 
 
-    private fun getRequest(sUrl: String, sPldao: PlaylistDao){
-
-
-        try {
-            // Create URL
-            val url = URL(sUrl)
-
-
-            // Build request
-            val request = Request.Builder().
-            url(url).
-            build()
-
-            client.newCall(request).enqueue(object: Callback{
-                override fun onResponse(call: Call, response: Response) {
-                   val str_response = response.body!!.string()
-
-
-                    //try create json obj; if error (like invalid link) then show error Toast msg
-
-                    try{
-                     val json_contact = JSONObject(str_response)
-                        mTitle = json_contact.getString("title")
-                        mAuthorName = json_contact.getString("author_name")
-
-                        addRecord(sPldao,mTitle!!,mAuthorName!!,sUrl)
-
-
-                    }
-                    catch(e: JSONException){
-
-                        lifecycleScope.launch {
-
-                            Toast.makeText(context, "Please paste valid Youtube link.", Toast.LENGTH_LONG).show()
-                        }
-
-                    }
-
-                }
-
-                override fun onFailure(call: Call, e: java.io.IOException) {
-                    Toast.makeText(context, "Error fetching request.", Toast.LENGTH_LONG).show()
-                }
-
-
-
-            })
-
-        }catch (err: Error){
-
-            print("Error when executing get request: "+err.localizedMessage)
-        }
-
-
+        })
     }
+
 
     private fun addRecord(playlistDao: PlaylistDao,
                           title: String, author: String, link: String){
@@ -166,6 +133,8 @@ class EditFragment : Fragment() {
                 binding?.etLink?.text?.clear()
 
 
+
+                //add to Recyclerview
                 lifecycleScope.launch {
                 playlistDao.fetchAllLinks().collect{
                     val list = ArrayList(it)
@@ -265,33 +234,34 @@ class EditFragment : Fragment() {
             //updated link from user
             val link = binding.etUpdateLink.text.toString()
 
-            //create new JSON obj based on updated link
-           // val newJson = fetchJson(link)
-
-            //update title and author
-
-
-            /*
-
-           val title = jsonContact?.getString("title")
-            val author = jsonContact?.getString("author")
-
-             */
-
 
 
             if(link.isNotEmpty()){
 
-                /*
+                fetch(link)
+
+                /* assign element in blocking queue to variable to work with */
+                try {
+                    jsonContact = blockingQueue.take()
+
+                }catch(e: InterruptedException){
+                    e.printStackTrace()
+                }
+
+                val title = jsonContact!!.getString("title")
+                val author = jsonContact!!.getString("author_name")
+
+                Log.d("message", "title: $title author: $author")
+
+
                 lifecycleScope.launch {
-                  playlistDao.update(PlaylistEntity(id, link = link, title = title!!, author = author!! ))
-                   Toast.makeText(context, "Record Updated",Toast.LENGTH_LONG).show()
+                    playlistDao.update(PlaylistEntity(id, link = link, title = title, author = author ))
+                    Toast.makeText(context, "Record Updated",Toast.LENGTH_LONG).show()
                     updateDialog.dismiss()
 
 
                 }
 
-                 */
 
             }else{
 
@@ -307,6 +277,22 @@ class EditFragment : Fragment() {
 
         updateDialog.show()
 
+    }
+
+
+    fun makeJSON(s: String?): JSONObject {
+        try {
+
+            return  JSONObject(s!!)
+
+        }catch(e: JSONException){
+
+
+            Toast.makeText(context, "Please paste valid Youtube link.", Toast.LENGTH_LONG).show()
+
+            null
+        }
+        return JSONObject(s!!)
     }
 
 }
