@@ -25,7 +25,7 @@ import java.io.IOException
 import java.net.URL
 import java.util.concurrent.ArrayBlockingQueue
 
-//TODO: 1. implement exception handling 2. Fix recycler view delete issues with visuals
+//TODO: 1. implement exception handling
 
 class EditFragment : Fragment()  {
     private var _binding: FragmentEditBinding? = null
@@ -34,7 +34,8 @@ class EditFragment : Fragment()  {
     private var mTitle: String? = null
     private var mAuthorName: String? = null
     private var plDao: PlaylistDao? = null
-    private val client = OkHttpClient()
+
+    //This will hold the data from the API response
     private val blockingQueue: ArrayBlockingQueue<JSONObject> =
         ArrayBlockingQueue(1)
     private var jsonContact: JSONObject? = null
@@ -180,6 +181,10 @@ class EditFragment : Fragment()  {
             binding?.tvNoRecordsAvailable?.visibility = View.GONE
 
 
+        }else{
+            binding?.rvItemsList?.visibility = View.GONE
+            binding?.tvNoRecordsAvailable?.visibility = View.VISIBLE
+
         }
 
     }
@@ -187,6 +192,10 @@ class EditFragment : Fragment()  {
     private fun deleteRecordAlertDialog(id: Int, playlistDao: PlaylistDao) {
         val builder = AlertDialog.Builder(context)
         builder.setTitle("Delete Record")
+
+
+        //set message for alert dialog
+        builder.setMessage("Are you sure you want to delete this video?")
         builder.setIcon(android.R.drawable.ic_dialog_alert)
 
         builder.setPositiveButton("Yes"){
@@ -195,19 +204,19 @@ class EditFragment : Fragment()  {
                 playlistDao.delete(PlaylistEntity(id))
                 Toast.makeText(context, "Video deleted successfully.",
                     Toast.LENGTH_LONG).show()
-
+                dialogInterface.dismiss()
             }
-            dialogInterface.dismiss()
+
         }
         builder.setNegativeButton("No"){
-                dialogInterface, _->
+                dialogInterface, _ ->
             dialogInterface.dismiss()
         }
 
         val alertDialog: AlertDialog = builder.create()
 
-        alertDialog.setCancelable(false)
-        alertDialog.show()
+        alertDialog.setCancelable(false) // will not allow user to cancel after clicking on remaining screen area
+        alertDialog.show() //show dialog in UI
 
     }
 
