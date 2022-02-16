@@ -11,6 +11,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
+import androidx.lifecycle.coroutineScope
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.beust.klaxon.Klaxon
@@ -22,10 +23,12 @@ import okhttp3.*
 import org.json.JSONException
 import org.json.JSONObject
 import java.io.IOException
+import java.lang.Error
+import java.lang.IllegalStateException
 import java.net.URL
 import java.util.concurrent.ArrayBlockingQueue
 
-//TODO: 1. implement exception handling
+//TODO: 1. implement invalid input exception handling
 
 class EditFragment : Fragment()  {
     private var _binding: FragmentEditBinding? = null
@@ -45,6 +48,7 @@ class EditFragment : Fragment()  {
 
 
 
+
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
@@ -58,6 +62,7 @@ class EditFragment : Fragment()  {
 
 
 
+
         //logic for when Add button is clicked
         binding?.btnAdd?.setOnClickListener {
 
@@ -67,24 +72,36 @@ class EditFragment : Fragment()  {
             /* send request to get JSON object and store in
             * blocking queue */
 
-            fetch(ytLink!!)
+            if (binding?.etLink?.text!!.isNotEmpty()) {
+                fetch(ytLink!!)
 
-            /* assign element in blocking queue to variable to work with */
-            try {
-                jsonContact = blockingQueue.take()
 
-            }catch(e: InterruptedException){
-                e.printStackTrace()
+                /* assign element in blocking queue to variable to work with */
+                try {
+                    jsonContact = blockingQueue.take()
+
+                } catch (e: InterruptedException) {
+                    e.printStackTrace()
+                }
+
+                mTitle = jsonContact!!.getString("title")
+                mAuthorName = jsonContact!!.getString("author_name")
+
+                Log.d("message", "title: $mTitle")
+
+                //add data into record
+                addRecord(plDao!!, mTitle!!, mAuthorName!!, ytLink!!)
+
+            }else{
+
+                //if link field is blank, show error message
+                    lifecycleScope.launch {
+                        Toast.makeText(context,"Please enter a link."
+                            , Toast.LENGTH_LONG).show()
+
+                    }
+
             }
-
-            mTitle = jsonContact!!.getString("title")
-            mAuthorName = jsonContact!!.getString("author_name")
-
-            Log.d("message","title: $mTitle")
-
-           //add data into record
-            addRecord(plDao!!,mTitle!!,mAuthorName!!, ytLink!!)
-
         }
 
         return view
@@ -104,17 +121,18 @@ class EditFragment : Fragment()  {
         build()
         client.newCall(request).enqueue(object: Callback{
             override fun onFailure(call: Call, e: IOException) {
-                TODO("Not yet implemented")
+                Log.e("message", "Error")
             }
 
             override fun onResponse(call: Call, response: Response) {
-                val json_contact = response.body!!.string()
-                val responseJSON = JSONObject(json_contact)
 
-                //add json object to queue to be parsed later
-               blockingQueue.add(responseJSON)
+                    val responseJSON = makeJSON(response.body!!.string())
+                    //add json object to queue to be parsed later
+                    blockingQueue.add(responseJSON)
 
-            }
+
+
+                }
 
 
         })
@@ -289,19 +307,35 @@ class EditFragment : Fragment()  {
     }
 
 
-    fun makeJSON(s: String?): JSONObject {
+    fun makeJSON(s: String): JSONObject {
         try {
 
-            return  JSONObject(s!!)
+            return  JSONObject(s)
+
+        }catch(e: Error){
+
+                lifecycleScope.launch {
+                    Toast.makeText(context, "Please paste valid Youtube link.", Toast.LENGTH_LONG).show()
+
+                }
+
+
+
+        }catch(e: IllegalStateException){
+            lifecycleScope.launch {
+                Toast.makeText(context, "Please paste valid Youtube link.", Toast.LENGTH_LONG).show()
+
+            }
+
 
         }catch(e: JSONException){
-
-
-            Toast.makeText(context, "Please paste valid Youtube link.", Toast.LENGTH_LONG).show()
-
-            null
+            lifecycleScope.launch {
+                Toast.makeText(context, "Please paste valid Youtube link.", Toast.LENGTH_LONG).show()
+            Log.e("Message","JSONException occurred.")
+            }
         }
-        return JSONObject(s!!)
+
+        return JSONObject(s)
     }
 
 }
