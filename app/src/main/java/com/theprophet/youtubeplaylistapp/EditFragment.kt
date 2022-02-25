@@ -25,8 +25,10 @@ import org.json.JSONObject
 import java.io.IOException
 import java.lang.Error
 import java.lang.IllegalStateException
+
 import java.net.URL
 import java.util.concurrent.ArrayBlockingQueue
+import kotlin.NullPointerException
 
 //TODO: 1. implement invalid input exception handling
 
@@ -39,8 +41,11 @@ class EditFragment : Fragment()  {
     private var plDao: PlaylistDao? = null
 
     //This will hold the data from the API response
-    private val blockingQueue: ArrayBlockingQueue<JSONObject> =
+    private val StringBlockingQueue: ArrayBlockingQueue<String> =
         ArrayBlockingQueue(1)
+
+    //flag to check if an object is JSONobject or not
+    private var isJson: Boolean? = false
     private var jsonContact: JSONObject? = null
 
 
@@ -69,39 +74,56 @@ class EditFragment : Fragment()  {
             /* load user input (youtube link) into variable as String */
             ytLink = binding?.etLink?.text.toString()
 
-            /* send request to get JSON object and store in
+            /* send request to get OKhttp string response and store in
             * blocking queue */
 
             if (binding?.etLink?.text!!.isNotEmpty()) {
                 fetch(ytLink!!)
 
-
-                /* assign element in blocking queue to variable to work with */
-                try {
-                    jsonContact = blockingQueue.take()
-
-                } catch (e: InterruptedException) {
-                    e.printStackTrace()
+                //make string a JSON object
+                val responseString = StringBlockingQueue.take()
+                try{
+                    jsonContact =  makeJSON(responseString)
+                    isJson = true
+                }catch(e: JSONException){
+                    lifecycleScope.launch {
+                        Toast.makeText(context, "Please enter a valid Youtube link.",
+                            Toast.LENGTH_SHORT).show()
+                        isJson = false
+                    }
                 }
 
-                mTitle = jsonContact!!.getString("title")
-                mAuthorName = jsonContact!!.getString("author_name")
+                if(isJson == true){
+                    /* assign element in blocking queue to variable to work with */
+                    /* set title and author variables */
+                    mTitle = jsonContact!!.getString("title")
+                    mAuthorName = jsonContact!!.getString("author_name")
 
-                Log.d("message", "title: $mTitle")
+                    try {
+                        //add data into record
+                        addRecord(plDao!!, mTitle!!, mAuthorName!!, ytLink!!)
+                    }catch(e: NullPointerException){
+                        //if link is invalid
+                        lifecycleScope.launch {
+                            Toast.makeText(context, "Please enter a link.",
+                                Toast.LENGTH_SHORT).show()
 
-                //add data into record
-                addRecord(plDao!!, mTitle!!, mAuthorName!!, ytLink!!)
+                        }
+                    }
 
-            }else{
+                }
 
-                //if link field is blank, show error message
+                } else {
+
+                    //if link field is blank, show error message
                     lifecycleScope.launch {
-                        Toast.makeText(context,"Please enter a link."
-                            , Toast.LENGTH_LONG).show()
+                        Toast.makeText(context, "Please enter a link.",
+                            Toast.LENGTH_SHORT).show()
 
                     }
 
-            }
+                }
+
         }
 
         return view
@@ -126,18 +148,23 @@ class EditFragment : Fragment()  {
 
             override fun onResponse(call: Call, response: Response) {
 
-                    val responseJSON = makeJSON(response.body!!.string())
-                    //add json object to queue to be parsed later
-                    blockingQueue.add(responseJSON)
+                //receive response in string form from Youtube API
+                val responseString = response.body!!.string()
 
-
+                //add string to blocking queue
+                StringBlockingQueue.add(responseString)
 
                 }
-
 
         })
     }
 
+    private fun makeJSON(s: String): JSONObject{
+
+                    return JSONObject(s)
+
+
+    }
 
     private fun addRecord(playlistDao: PlaylistDao,
                           title: String, author: String, link: String){
@@ -267,23 +294,32 @@ class EditFragment : Fragment()  {
 
                 fetch(link)
 
-                /* assign element in blocking queue to variable to work with */
-                try {
-                    jsonContact = blockingQueue.take()
+                /* add and retrieve OKhttp response string from blocking queue */
 
-                }catch(e: InterruptedException){
-                    e.printStackTrace()
-                }
+                    // get string from blocking queue
+                    val response = StringBlockingQueue.take()
 
+                    try{
+                        //make string into JSON object
+                       jsonContact = makeJSON(response)
+
+                    }catch(e: JSONException){
+                        //if link is invalid, show error message
+                        lifecycleScope.launch {
+                            Toast.makeText(context, "Please enter a valid link.",
+                                Toast.LENGTH_LONG).show()
+                        }
+
+                    }
+
+                //set variables with title and author name
                 val title = jsonContact!!.getString("title")
                 val author = jsonContact!!.getString("author_name")
 
-                Log.d("message", "title: $title author: $author")
-
-
+                //update database
                 lifecycleScope.launch {
                     playlistDao.update(PlaylistEntity(id, link = link, title = title, author = author ))
-                    Toast.makeText(context, "Record Updated",Toast.LENGTH_LONG).show()
+                    Toast.makeText(context, "Record Updated",Toast.LENGTH_SHORT).show()
                     updateDialog.dismiss()
 
 
@@ -291,7 +327,7 @@ class EditFragment : Fragment()  {
 
 
             }else{
-
+                //if link is blank, show error message
                 Toast.makeText(context, "Link cannot be blank.",Toast.LENGTH_LONG).show()
                 updateDialog.dismiss()
             }
@@ -307,35 +343,5 @@ class EditFragment : Fragment()  {
     }
 
 
-    fun makeJSON(s: String): JSONObject {
-        try {
-
-            return  JSONObject(s)
-
-        }catch(e: Error){
-
-                lifecycleScope.launch {
-                    Toast.makeText(context, "Please paste valid Youtube link.", Toast.LENGTH_LONG).show()
-
-                }
-
-
-
-        }catch(e: IllegalStateException){
-            lifecycleScope.launch {
-                Toast.makeText(context, "Please paste valid Youtube link.", Toast.LENGTH_LONG).show()
-
-            }
-
-
-        }catch(e: JSONException){
-            lifecycleScope.launch {
-                Toast.makeText(context, "Please paste valid Youtube link.", Toast.LENGTH_LONG).show()
-            Log.e("Message","JSONException occurred.")
-            }
-        }
-
-        return JSONObject(s)
     }
 
-}
