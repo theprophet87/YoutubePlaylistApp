@@ -30,7 +30,6 @@ import java.net.URL
 import java.util.concurrent.ArrayBlockingQueue
 import kotlin.NullPointerException
 
-//TODO: 1. implement invalid input exception handling
 
 class EditFragment : Fragment()  {
     private var _binding: FragmentEditBinding? = null
@@ -50,10 +49,6 @@ class EditFragment : Fragment()  {
 
 
 
-
-
-
-
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
@@ -66,7 +61,17 @@ class EditFragment : Fragment()  {
         plDao = db.playlistDao()
 
 
+        //display Recyclerview
+        lifecycleScope.launch {
+            plDao!!.fetchAllLinks().collect{
+                val list = ArrayList(it)
 
+                setupListOfDataIntoRecyclerView(list, plDao!!)
+
+
+            }
+
+        }
 
         //logic for when Add button is clicked
         binding?.btnAdd?.setOnClickListener {
@@ -110,7 +115,6 @@ class EditFragment : Fragment()  {
 
                         }
                     }
-
                 }
 
                 } else {
@@ -180,17 +184,7 @@ class EditFragment : Fragment()  {
 
 
 
-                //add to Recyclerview
-                lifecycleScope.launch {
-                playlistDao.fetchAllLinks().collect{
-                    val list = ArrayList(it)
 
-                    setupListOfDataIntoRecyclerView(list, playlistDao)
-
-
-                     }
-
-                }
 
             }
 
@@ -206,19 +200,18 @@ class EditFragment : Fragment()  {
     private fun setupListOfDataIntoRecyclerView(playlistList: ArrayList<PlaylistEntity>,
                                                  playlistDao: PlaylistDao){
 
+        val itemAdapter = ItemAdapter(playlistList,
+            {
+                    updateId ->
+                updateRecordDialog(updateId, playlistDao)
+            },
+            {
+                    deleteId ->
+                deleteRecordAlertDialog(deleteId, playlistDao)
+            }
+
+        )
         if(playlistList.isNotEmpty()){
-
-            val itemAdapter = ItemAdapter(playlistList,
-                {
-                        updateId ->
-                    updateRecordDialog(updateId, playlistDao)
-                },
-                {
-                        deleteId ->
-                    deleteRecordAlertDialog(deleteId, playlistDao)
-                }
-
-            )
 
             binding?.rvItemsList?.layoutManager = LinearLayoutManager(context)
             binding?.rvItemsList?.adapter = itemAdapter
@@ -278,17 +271,13 @@ class EditFragment : Fragment()  {
                 if(it != null){
                     binding.etUpdateLink.setText(it.link)
 
-
                 }
-
 
             }
         }
         binding.tvUpdate.setOnClickListener {
             //updated link from user
             val link = binding.etUpdateLink.text.toString()
-
-
 
             if(link.isNotEmpty()){
 
@@ -309,7 +298,6 @@ class EditFragment : Fragment()  {
                             Toast.makeText(context, "Please enter a valid link.",
                                 Toast.LENGTH_LONG).show()
                         }
-
                     }
 
                 //set variables with title and author name
@@ -322,9 +310,7 @@ class EditFragment : Fragment()  {
                     Toast.makeText(context, "Record Updated",Toast.LENGTH_SHORT).show()
                     updateDialog.dismiss()
 
-
                 }
-
 
             }else{
                 //if link is blank, show error message
@@ -340,8 +326,7 @@ class EditFragment : Fragment()  {
 
         updateDialog.show()
 
-    }
-
+        }
 
     }
 

@@ -12,6 +12,12 @@
     android:elevation="23dp"
     app:cardCornerRadius="6dp">
 
+<LinearLayout
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:id="@+id/llHome"
+    android:orientation="vertical"
+    android:backgroundTint="@color/white">
 
 
         <TextView
@@ -25,6 +31,20 @@
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent"
             />
+
+        <TextView
+            android:id="@+id/tvAuthor"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textColor="@color/light_grey"
+            android:textSize="13sp"
+            tools:text="Author"
+            android:layout_margin="10dp"
+
+            />
+
+
+</LinearLayout>
 
 
 

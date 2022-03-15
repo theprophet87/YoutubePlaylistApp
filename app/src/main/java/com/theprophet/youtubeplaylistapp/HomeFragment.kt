@@ -7,15 +7,22 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.Button
 import android.widget.Toast
+import androidx.lifecycle.lifecycleScope
+import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.pierfrancescosoffritti.androidyoutubeplayer.core.player.YouTubePlayer
 import com.pierfrancescosoffritti.androidyoutubeplayer.core.player.listeners.AbstractYouTubePlayerListener
 import com.pierfrancescosoffritti.androidyoutubeplayer.core.player.views.YouTubePlayerView
 import com.theprophet.youtubeplaylistapp.databinding.FragmentHomeBinding
+import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.launch
+
+//TODO: 1. Make playlist entries clickable
 
 class HomeFragment : Fragment() {
     private var _binding: FragmentHomeBinding? = null
     private val binding get() = _binding
+    private var plDao: PlaylistDao? = null
 
 
     private var list: RecyclerView? = null
@@ -33,6 +40,23 @@ class HomeFragment : Fragment() {
         youTubePlayerView = binding?.ytPlayerView
 
         initYoutubePlayerView()
+
+        //instantiate database
+        val db = PlaylistDatabase.getInstance(requireContext())
+        plDao = db.playlistDao()
+
+        //display Recyclerview
+        lifecycleScope.launch {
+            plDao!!.fetchAllLinks().collect{
+                val list = ArrayList(it)
+
+                setupListOfDataIntoRecyclerView(list, plDao!!)
+
+
+            }
+
+        }
+
 
 
 
@@ -64,4 +88,29 @@ class HomeFragment : Fragment() {
         })
 
     }
+
+    //method to show RecyclerView
+
+    private fun setupListOfDataIntoRecyclerView(playlistList: ArrayList<PlaylistEntity>,
+                                                playlistDao: PlaylistDao){
+
+        if(playlistList.isNotEmpty()){
+
+            val homeAdapter = HomeAdapter(playlistList)
+
+            binding?.recyclerViewProjects?.layoutManager = LinearLayoutManager(context)
+            binding?.recyclerViewProjects?.adapter = homeAdapter
+            binding?.recyclerViewProjects?.visibility = View.VISIBLE
+            binding?.tvNoRecordsAvailable?.visibility = View.GONE
+
+
+        }else{
+            binding?.recyclerViewProjects?.visibility = View.GONE
+            binding?.tvNoRecordsAvailable?.visibility = View.VISIBLE
+
+        }
+
+    }
+
+
 }

@@ -9,16 +9,13 @@
         <entry key="..\:/Users/Michael/AndroidStudioProjects/YoutubePlaylistApp/app/src/main/res/layout/activity_main.xml" value="0.215625" />
         <entry key="..\:/Users/Michael/AndroidStudioProjects/YoutubePlaylistApp/app/src/main/res/layout/dialog_update.xml" value="0.25" />
         <entry key="..\:/Users/Michael/AndroidStudioProjects/YoutubePlaylistApp/app/src/main/res/layout/fragment_edit.xml" value="0.1" />
-        <entry key="..\:/Users/Michael/AndroidStudioProjects/YoutubePlaylistApp/app/src/main/res/layout/fragment_home.xml" value="0.1" />
+        <entry key="..\:/Users/Michael/AndroidStudioProjects/YoutubePlaylistApp/app/src/main/res/layout/fragment_home.xml" value="0.10486322188449848" />
         <entry key="..\:/Users/Michael/AndroidStudioProjects/YoutubePlaylistApp/app/src/main/res/layout/item_row.xml" value="0.215625" />
         <entry key="..\:/Users/Michael/AndroidStudioProjects/YoutubePlaylistApp/app/src/main/res/layout/nav_header.xml" value="0.215625" />
         <entry key="..\:/Users/Michael/AndroidStudioProjects/YoutubePlaylistApp/app/src/main/res/layout/play_items_list.xml" value="0.215625" />
         <entry key="..\:/Users/Michael/AndroidStudioProjects/YoutubePlaylistApp/app/src/main/res/menu/my_navigation_items.xml" value="0.215625" />
       </map>
     </option>
-  </component>
-  <component name="ProjectPlainTextFileTypeManager">
-    <file url="file://$PROJECT_DIR$/app/src/main/java/com/theprophet/youtubeplaylistapp/getResponse.kt" />
   </component>
   <component name="ProjectRootManager" version="2" languageLevel="JDK_11" default="true" project-jdk-name="1.8" project-jdk-type="JavaSDK">
     <output url="file://$PROJECT_DIR$/build/classes" />
