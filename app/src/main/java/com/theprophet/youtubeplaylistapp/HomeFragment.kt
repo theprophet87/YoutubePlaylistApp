@@ -17,7 +17,7 @@ import com.theprophet.youtubeplaylistapp.databinding.FragmentHomeBinding
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
 
-//TODO: 1. Make playlist entries clickable
+//TODO: 1. Make playlist entries to play youtube video
 
 class HomeFragment : Fragment() {
     private var _binding: FragmentHomeBinding? = null
@@ -100,6 +100,15 @@ class HomeFragment : Fragment() {
 
             binding?.recyclerViewProjects?.layoutManager = LinearLayoutManager(context)
             binding?.recyclerViewProjects?.adapter = homeAdapter
+
+            //The itemClick listener logic to play youtube videos
+            homeAdapter.setOnItemClickListener(object : HomeAdapter.onItemClickListener {
+                override fun onItemClick(position: Int) {
+                    Toast.makeText(context, "You clicked on item no. $position", Toast.LENGTH_LONG).show()
+                }
+
+
+            })
             binding?.recyclerViewProjects?.visibility = View.VISIBLE
             binding?.tvNoRecordsAvailable?.visibility = View.GONE
 
